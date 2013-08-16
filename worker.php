@@ -15,6 +15,10 @@
 
                 var worker = new Worker('ga-worker.js');
 
+                function htmlEntities(str) {
+                    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                }
+
                 worker.addEventListener('message', function(e) {
                   if (!console.log) return;
                   if (typeof e.data === 'string') {
@@ -28,7 +32,7 @@
                                 });
                             break;
                             case 'best':
-                                $('#result').html(e.data.best.gene);
+                                $('#result').html(htmlEntities(e.data.best.gene));
                                 $('#fitness').html('Fitness: ' + e.data.best.fitness + ' | ' + e.data.best.generations + ' Generations');
                             break;
                         }
