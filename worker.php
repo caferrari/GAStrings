@@ -23,8 +23,8 @@
                 Object.getOwnPropertyNames(e.data).forEach(function(param) {
                     switch (param) {
                         case 'population':
-                            $.postJSON('server.php', {action: 'workload', population: e.data.population}, function(data) {
-                                console.log(data);
+                            $.postJSON('server.php', {action: 'workload', population: e.data.population}, function(r) {
+                                worker.postMessage(r);
                             });
                         break;
                     }

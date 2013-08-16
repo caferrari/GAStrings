@@ -70,7 +70,7 @@ var Chromosome = function(population, gene) {
     return that;
 }
 
-var Population = function(objective, populationSize, evolutionSteps=1, crossoverProbability=0.8, mutationProbability=0.03) {
+var Population = function(objective, populationSize) {
 
     var F = function() {}
     F.prototype = Object;
@@ -78,11 +78,10 @@ var Population = function(objective, populationSize, evolutionSteps=1, crossover
 
     that.tournamentSize = 3;
     that.population = [];
-    that.mutationProbability = mutationProbability;
-    that.crossoverProbability = crossoverProbability;
+    that.mutationProbability = 0.03;
+    that.crossoverProbability = 0.8;
     that.objective = objective;
     that.populationSize = populationSize;
-    that.evolutionSteps = evolutionSteps;
 
     that.prototype.createPopulation = function() {
         var length = self.objective.length;
@@ -163,6 +162,14 @@ var Population = function(objective, populationSize, evolutionSteps=1, crossover
         this.cropPopulation();
     }
 
+    that.prototype.mergeElite = function(data) {
+        var start = this.population.length - data.length;
+        for (var x=0; x<data.length; x++)  {
+            this.population[start++] = new Chromosome(this.population, data[x].gene);
+        }
+        this.sortPopulation();
+    }
+
     that.prototype.getSerializedData = function() {
         var pop = [];
         for (var x=0; x<self.sharedPopulationSize; x++) {
@@ -199,13 +206,20 @@ self.addEventListener('message', function(e) {
             self.sharedPopulationSize = e.data.sharedPopulationSize;
             self.postMessage('Shared population size set to: ' + e.data.sharedPopulationSize);
             break;
+        case 'mergeElite':
+            population.mergeElite(e.data.mergeElite);
+            self.postMessage('Appending some data shared by the server');
+            break;
+        case 'done':
+            self.postMessage('Solução encontrada');
+            break;
         case 'start':
             self.postMessage('Starting');
             self.progress = [0, self.maximumMates];
             for (var x=0; x<self.generations; x++) {
                 self.population.evolve();
                 self.progress[0]++;
-                self.postMessage('Best: ' + self.population.population[0].gene);
+                //self.postMessage('Best: ' + self.population.population[0].gene);
             }
             self.postMessage({population: self.population.getSerializedData()});
             break;
