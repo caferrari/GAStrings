@@ -1,7 +1,6 @@
 'use strict';
 
 var populationSize;
-var maximumMates;
 var population;
 var progress = [0,0];
 
@@ -16,7 +15,7 @@ var Chromosome = function(population, gene) {
     var that = new F();
 
     that.population = population;
-    that.gene = false;
+    that.gene = '';
     that.fitness = 99999;
 
     that.prototype.calculateFitness = function() {
@@ -32,9 +31,7 @@ var Chromosome = function(population, gene) {
     }
 
     that.prototype.randomGene = function() {
-
         var length = self.population.objective.length;
-
         this.gene = '';
         for (var x = 0; x < length; x++) {
             this.gene += this.getRandomChar();
@@ -44,7 +41,8 @@ var Chromosome = function(population, gene) {
     that.prototype.mutate = function () {
         var position = Math.floor(Math.random() * this.gene.length);
         var gene = this.gene.replaceAt(position, this.getRandomChar());
-        return new Chromosome(gene);
+
+        return new Chromosome(this.population, gene);
     }
 
     that.prototype.mate = function(mate) {
@@ -72,7 +70,7 @@ var Chromosome = function(population, gene) {
     return that;
 }
 
-var Population = function(objective, populationSize, evolutionSteps=100, crossoverProbability=0.8, mutationProbability=0.3) {
+var Population = function(objective, populationSize, evolutionSteps=1, crossoverProbability=0.8, mutationProbability=0.03) {
 
     var F = function() {}
     F.prototype = Object;
@@ -90,10 +88,9 @@ var Population = function(objective, populationSize, evolutionSteps=100, crossov
         var length = self.objective.length;
         this.population = [];
         for (var x = 0; x< self.populationSize; x++) {
-            this.population.push(new Chromosome(this));
+            this.population.push(new Chromosome(this.population));
         }
         this.sortPopulation();
-
     }
 
     that.prototype.sortPopulation = function() {
@@ -135,7 +132,10 @@ var Population = function(objective, populationSize, evolutionSteps=100, crossov
     }
 
     that.prototype.evolve = function() {
-        for (var evolution=0; evolution < this.evolutionSteps; evolution++) {
+        var newGeneration = [];
+        var idx = 0;
+
+        while (idx < this.population.length) {
             if (this.should(this.crossoverProbability)) {
                 var parents = this.selectParents();
                 var childrens = parents[0].mate(parents[1]);
@@ -144,19 +144,30 @@ var Population = function(objective, populationSize, evolutionSteps=100, crossov
                     if (that.should(that.mutationProbability)) {
                         child = child.mutate();
                     }
-                    that.population.push(child);
+                    newGeneration.push(child);
+                    idx++;
                 });
+                continue;
             }
+
+            newGeneration.push(
+                this.should(this.mutationProbability) ? this.population[idx].mutate() : this.population[idx]
+            );
+
+            idx++;
         }
+
+        this.population = newGeneration;
+
         this.sortPopulation();
         this.cropPopulation();
     }
 
     that.prototype.getSerializedData = function() {
         var pop = [];
-        this.population.forEach(function(cms) {
-            pop.push(cms.serialize());
-        })
+        for (var x=0; x<self.sharedPopulationSize; x++) {
+            pop.push(this.population[x].serialize())
+        }
         return pop;
     }
 
@@ -170,32 +181,34 @@ self.addEventListener('message', function(e) {
         case 'workPhrase':
             self.objective = e.data.workPhrase;
             self.postMessage('Objective defined to: ' + self.objective);
-            self.population = new Population();
             break;
         case 'populationSize':
             self.populationSize = e.data.populationSize;
             self.postMessage('Population size defined to: ' + populationSize);
             break;
-        case 'maximumMates':
-            self.maximumMates = e.data.maximumMates;
-            self.postMessage('Maximum number of mates defined to: ' + maximumMates);
+        case 'generations':
+            self.generations = e.data.generations;
+            self.postMessage('Generations defined to: ' + generations);
             break;
         case 'createPopulation':
             self.population = new Population(objective, populationSize);
             self.population.createPopulation();
             self.postMessage('Creating population');
             break;
+        case 'sharedPopulationSize':
+            self.sharedPopulationSize = e.data.sharedPopulationSize;
+            self.postMessage('Shared population size set to: ' + e.data.sharedPopulationSize);
+            break;
         case 'start':
             self.postMessage('Starting');
             self.progress = [0, self.maximumMates];
-            for (var x=0; x<self.maximumMates; x++) {
+            for (var x=0; x<self.generations; x++) {
                 self.population.evolve();
                 self.progress[0]++;
+                self.postMessage('Best: ' + self.population.population[0].gene);
             }
             self.postMessage({population: self.population.getSerializedData()});
             break;
-
-
         default:
             self.postMessage('Command not found: ' + param);
     }

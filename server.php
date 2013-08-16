@@ -8,8 +8,9 @@ function start($data) {
 
     return array(
         'workPhrase' => $workPhrase,
-        'populationSize' => 10,
-        'maximumMates' => 1,
+        'populationSize' => 1000,
+        'sharedPopulationSize' => 100,
+        'generations' => 10,
         'createPopulation' => true,
         'start' => true
     );

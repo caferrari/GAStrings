@@ -18,7 +18,8 @@
               if (!console.log) return;
               if (typeof e.data === 'string') {
                 console.log('Worker said: ', e.data);
-              }else {
+              } else {
+                console.log(e.data);
                 Object.getOwnPropertyNames(e.data).forEach(function(param) {
                     switch (param) {
                         case 'population':
