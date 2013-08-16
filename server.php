@@ -27,9 +27,9 @@ class WorkLoad
     {
         return array(
             'workPhrase' => $this->workPhrase,
-            'populationSize' => 1000,
-            'sharedPopulationSize' => 100,
-            'generations' => 30,
+            'populationSize' => 3000,
+            'sharedPopulationSize' => 300,
+            'generations' => 100,
             'createPopulation' => true,
             'start' => true
         );

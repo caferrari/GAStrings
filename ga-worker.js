@@ -82,6 +82,9 @@ var Population = function(objective, populationSize) {
     that.crossoverProbability = 0.8;
     that.objective = objective;
     that.populationSize = populationSize;
+    that.generations = 1;
+
+    that.best = null;
 
     that.prototype.createPopulation = function() {
         var length = self.objective.length;
@@ -98,6 +101,7 @@ var Population = function(objective, populationSize) {
                 return a.fitness<b.fitness ? -1 : a.fitness>b.fitness ? 1 : 0;
             }
         );
+        this.best = this.population[0].serialize();
     }
 
     that.prototype.cropPopulation = function() {
@@ -157,7 +161,7 @@ var Population = function(objective, populationSize) {
         }
 
         this.population = newGeneration;
-
+        this.generations++;
         this.sortPopulation();
         this.cropPopulation();
     }
@@ -219,8 +223,13 @@ self.addEventListener('message', function(e) {
             for (var x=0; x<self.generations; x++) {
                 self.population.evolve();
                 self.progress[0]++;
-                //self.postMessage('Best: ' + self.population.population[0].gene);
+
+                var best = self.population.best;
+                best.generations = self.population.generations;
+
+                self.postMessage({'best' : best});
             }
+            self.postMessage('Best: ' + self.population.population[0].fitness);
             self.postMessage({population: self.population.getSerializedData()});
             break;
         default:

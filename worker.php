@@ -10,39 +10,66 @@
 
         <script type="text/javascript">
 
-            $.postJSON = function(url, data, callback) { $.post(url, data, callback, "json"); };
+            $(document).ready(function(){
+                $.postJSON = function(url, data, callback) { $.post(url, data, callback, "json"); };
 
-            var worker = new Worker('ga-worker.js');
+                var worker = new Worker('ga-worker.js');
 
-            worker.addEventListener('message', function(e) {
-              if (!console.log) return;
-              if (typeof e.data === 'string') {
-                console.log('Worker said: ', e.data);
-              } else {
-                console.log(e.data);
-                Object.getOwnPropertyNames(e.data).forEach(function(param) {
-                    switch (param) {
-                        case 'population':
-                            $.postJSON('server.php', {action: 'workload', population: e.data.population}, function(r) {
-                                worker.postMessage(r);
-                            });
-                        break;
-                    }
+                worker.addEventListener('message', function(e) {
+                  if (!console.log) return;
+                  if (typeof e.data === 'string') {
+                    console.log('Worker said: ', e.data);
+                  } else {
+                    Object.getOwnPropertyNames(e.data).forEach(function(param) {
+                        switch (param) {
+                            case 'population':
+                                $.postJSON('server.php', {action: 'workload', population: e.data.population}, function(r) {
+                                    worker.postMessage(r);
+                                });
+                            break;
+                            case 'best':
+                                $('#result').html(e.data.best.gene);
+                                $('#fitness').html('Fitness: ' + e.data.best.fitness + ' | ' + e.data.best.generations + ' Generations');
+                            break;
+                        }
+                    });
+                  }
+
+                }, false);
+
+                $.postJSON('server.php', {action: 'start'}, function(r) {
+                    worker.postMessage(r);
                 });
-              }
-
-            }, false);
-
-            $.postJSON('server.php', {action: 'start'}, function(r) {
-                worker.postMessage(r);
             });
-
-
 
         </script>
 
+        <link href='http://fonts.googleapis.com/css?family=Ubuntu+Mono' rel='stylesheet' type='text/css'>
+        <style type="text/css">
+            div {
+                font-family: 'Ubuntu Mono', sans-serif;
+                word-break: break-all
+            }
+
+            #fitness {
+                text-align: center;
+                font-weight: bold;
+                font-site: 3em;
+                margin-bottom: 10px;
+            }
+        </style>
+
     </head>
     <body>
+
+        <div id="fitness">
+
+        </div>
+
+
+        <div id="result">
+
+        </div>
 
 
     </body>
